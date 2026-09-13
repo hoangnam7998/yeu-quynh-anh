@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gửi Quỳnh Anh ❤️</title>
+    
+    <!-- Nhúng Font uốn lượn sắc nét Great Vibes -->
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #0d0208;
+            font-family: 'Great Vibes', cursive;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        /* Nút thông báo bấm để nghe nhạc */
+        #playHint {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ffb6c1;
+            background: rgba(255, 105, 180, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-family: sans-serif;
+            font-size: 14px;
+            z-index: 999;
+            pointer-events: none;
+            animation: pulseHint 1.5s infinite;
+        }
+        @keyframes pulseHint {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="playHint">✨ Chạm vào màn hình để bật nhạc nhé ❤️</div>
+
+    <!-- THẺ ÂM THANH (Gọi file love.mp3 cùng thư mục) -->
+    <audio id="bgMusic" loop>
+        <source src="love.mp3" type="audio/mpeg">
+    </audio>
+
+    <canvas id="matrixCanvas"></canvas>
+    <canvas id="textCanvas"></canvas>
+
+<script>
+    function setupCanvas(canvas) {
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        ctx.scale(dpr, dpr);
+        
+        return { width, height };
+    }
+
+    const matrixCanvas = document.getElementById('matrixCanvas');
+    const ctxM = matrixCanvas.getContext('2d');
+    
+    const textCanvas = document.getElementById('textCanvas');
+    const ctxT = textCanvas.getContext('2d');
+
+    let size = setupCanvas(matrixCanvas);
+    setupCanvas(textCanvas);
+
+    const chars = '0123456789ABCDEF♥💕🌸✨';
+    const fontSize = 11; 
+    let columns = Math.floor(size.width / fontSize);
+    let drops = Array(columns).fill(0).map(() => Math.random() * -100);
+
+    function drawMatrix() {
+        ctxM.fillStyle = 'rgba(13, 2, 8, 0.08)'; 
+        ctxM.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
+
+        ctxM.fillStyle = '#ffb6c1'; 
+        ctxM.font = fontSize + 'px monospace';
+
+        const isFinalState = (typeof state !== 'undefined' && state === "END");
+        const speed = isFinalState ? (0.4 / 2) : 0.4;
+
+        for (let i = 0; i < drops.length; i++) {
+            const text = chars.charAt(Math.floor(Math.random() * chars.length));
+            ctxM.fillText(text, i * fontSize, drops[i] * fontSize);
+
+            if (drops[i] * fontSize > size.height && Math.random() > 0.985) {
+                drops[i] = 0;
+            }
+            drops[i] += speed; 
+        }
+    }
+
+    const messages = [
+        "14/8/2026 - 14/9/2026",
+        "Yeeee mình yêu nhau được 1 tháng rồi",
+        "Và nói chuyện với nhau được 191 ngày ",
+        "Yêu Bé Iuuu siêu cấp vũ trụ của anh",
+        "Nam ❤️ Quỳnh Anh"
+    ];
+
+    let msgIndex = 0;
+    let state = "FADE_IN"; 
+    let alpha = 0;
+    let stateTimer = 0;
+    let glowAngle = 0;
+    let lastTime = performance.now();
+
+    function wrapText(text, maxWidth) {
+        const words = text.split(' ');
+        let lines = [];
+        let currentLine = words[0];
+
+        for (let i = 1; i < words.length; i++) {
+            let word = words[i];
+            let metrics = ctxT.measureText(currentLine + " " + word);
+            if (metrics.width < maxWidth) {
+                currentLine += " " + word;
+            } else {
+                lines.push(currentLine);
+                currentLine = word;
+            }
+        }
+        lines.push(currentLine);
+        return lines;
+    }
+
+    function drawSmoothText(text, opacity) {
+        const isFinal = (msgIndex === messages.length - 1);
+        
+        const screenWidth = window.innerWidth;
+        let baseFontSize = screenWidth < 500 ? (screenWidth / (isFinal ? 9 : 11)) : (screenWidth / 12);
+        
+        const minSize = 20;
+        const maxSize = isFinal ? 50 : 38;
+        baseFontSize = Math.max(minSize, Math.min(baseFontSize, maxSize));
+        
+        ctxT.font = `${baseFontSize}px "Great Vibes", cursive`;
+        ctxT.textBaseline = "middle";
+        
+        const maxWidth = size.width * 0.85;
+        const lines = wrapText(text, maxWidth);
+        
+        const lineHeight = baseFontSize * 1.25;
+        const startY = (size.height / 2) - ((lines.length - 1) * lineHeight / 2);
+
+        glowAngle += 0.04;
+        const pulse = (Math.sin(glowAngle) + 1) / 2;
+
+        ctxT.save();
+        ctxT.globalAlpha = Math.max(0, opacity);
+
+        const glowColor = `rgba(255, 105, 180, ${0.85 + pulse * 0.15})`;
+        const blurLayers = isFinal ? [6, 15, 25, 40] : [5, 12, 20];      
+
+        blurLayers.forEach(blur => {
+            ctxT.shadowColor = glowColor;
+            ctxT.shadowBlur = blur;
+            ctxT.fillStyle = "#FFFFFF";
+
+            lines.forEach((line, index) => {
+                const currentY = startY + (index * lineHeight);
+                if (isFinal && line.includes("Nam ❤️ Quỳnh Anh")) {
+                    drawCenteredCompositeLine(line, size.width / 2, currentY, false, blurLayers);
+                } else {
+                    ctxT.textAlign = "center";
+                    ctxT.fillText(line, size.width / 2, currentY);
+                }
+            });
+        });
+
+        ctxT.shadowColor = "transparent";
+        ctxT.shadowBlur = 0;
+        ctxT.fillStyle = "#FFFFFF";
+
+        lines.forEach((line, index) => {
+            const currentY = startY + (index * lineHeight);
+            if (isFinal && line.includes("Nam ❤️ Quỳnh Anh")) {
+                drawCenteredCompositeLine(line, size.width / 2, currentY, true, blurLayers);
+            } else {
+                ctxT.textAlign = "center";
+                ctxT.fillText(line, size.width / 2, currentY);
+            }
+        });
+
+        ctxT.restore();
+    }
+
+    function drawCenteredCompositeLine(line, centerX, y, isMainText, blurLayers) {
+        const parts = ["Nam ", "❤️", " Quỳnh Anh"];
+        
+        let totalWidth = 0;
+        parts.forEach(part => {
+            if (part === "❤️") {
+                ctxT.font = `${parseInt(ctxT.font)}px sans-serif`;
+            }
+            totalWidth += ctxT.measureText(part).width;
+            if (part === "❤️") {
+                ctxT.font = `${parseInt(ctxT.font)}px "Great Vibes", cursive`;
+            }
+        });
+
+        let currentX = centerX - (totalWidth / 2);
+        
+        parts.forEach(part => {
+            if (part === "❤️") {
+                ctxT.font = `${parseInt(ctxT.font)}px sans-serif`;
+                if (isMainText) ctxT.shadowBlur = 0;
+            } else {
+                if (!isMainText && blurLayers) ctxT.shadowBlur = blurLayers[blurLayers.length - 1];
+            }
+            
+            ctxT.textAlign = "left";
+            ctxT.fillText(part, currentX, y);
+            
+            currentX += ctxT.measureText(part).width;
+
+            if (part === "❤️") {
+                ctxT.font = `${parseInt(ctxT.font)}px "Great Vibes", cursive`;
+            }
+        });
+    }
+
+    function animateText(currentTime) {
+        const deltaTime = (currentTime - lastTime) / 1000;
+        lastTime = currentTime;
+
+        ctxT.clearRect(0, 0, size.width, size.height);
+
+        const isFinal = (msgIndex === messages.length - 1);
+
+        if (state === "FADE_IN") {
+            alpha += deltaTime * 1.2;
+            drawSmoothText(messages[msgIndex], alpha);
+
+            if (alpha >= 1) {
+                alpha = 1;
+                state = "HOLD";
+                stateTimer = 0;
+            }
+        } 
+        else if (state === "HOLD") {
+            drawSmoothText(messages[msgIndex], 1);
+            stateTimer += deltaTime;
+
+            if (stateTimer > 2.5) {
+                if (isFinal) {
+                    state = "END";
+                } else {
+                    state = "FADE_OUT";
+                }
+            }
+        } 
+        else if (state === "FADE_OUT") {
+            alpha -= deltaTime * 1.2;
+            drawSmoothText(messages[msgIndex], alpha);
+
+            if (alpha <= 0) {
+                alpha = 0;
+                msgIndex++;
+                state = "FADE_IN";
+            }
+        } 
+        else if (state === "END") {
+            drawSmoothText(messages[msgIndex], 1);
+        }
+    }
+
+    function loop(currentTime) {
+        drawMatrix();
+        animateText(currentTime);
+        requestAnimationFrame(loop);
+    }
+
+    requestAnimationFrame(loop);
+
+    // --- KÍCH HOẠT PHÁT NHẠC KHI CLICK/CHẠM ---
+    window.addEventListener('click', () => {
+        const music = document.getElementById('bgMusic');
+        const hint = document.getElementById('playHint');
+        if (music) {
+            music.play().then(() => {
+                if (hint) hint.style.display = 'none'; // Ẩn thông báo đi khi nhạc đã bật
+            }).catch(e => console.log(e));
+        }
+    }, { once: true });
+
+    window.addEventListener('resize', () => {
+        size = setupCanvas(matrixCanvas);
+        setupCanvas(textCanvas);
+        columns = Math.floor(size.width / fontSize);
+        drops = Array(columns).fill(0).map(() => Math.random() * -100);
+    });
+</script>
+</body>
+</html>
