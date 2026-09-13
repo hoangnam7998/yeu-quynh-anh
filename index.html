@@ -47,9 +47,10 @@
         .falling-photo {
             position: absolute;
             border-radius: 10px;
-            border: 2px solid rgba(255, 182, 193, 0.7);
+            border: 2px solid rgba(255, 182, 193, 0.9);
             object-fit: cover;
-            box-shadow: 0 10px 25px rgba(255, 105, 180, 0.4);
+            box-shadow: 0 10px 30px rgba(255, 105, 180, 0.6);
+            filter: brightness(1.35) contrast(1.1); /* Tăng độ sáng và nét cho ảnh */
             will-change: transform, opacity;
         }
 
@@ -174,6 +175,7 @@
     let stateTimer = 0;
     let glowAngle = 0;
     let lastTime = performance.now();
+    let finalBurstTriggered = false; // Biến kiểm tra hiệu ứng bùng nổ ảnh 1 lần
 
     function wrapText(text, maxWidth) {
         const words = text.split(' ');
@@ -332,6 +334,16 @@
         } 
         else if (state === "END") {
             drawSmoothText(messages[msgIndex], 1);
+            
+            // Kích hoạt trận mưa ảnh bùng nổ (dày hơn gấp nhiều lần) đúng 1 lần khi đến dòng cuối
+            if (!finalBurstTriggered) {
+                finalBurstTriggered = true;
+                for (let k = 0; k < 22; k++) {
+                    setTimeout(() => {
+                        create3DPhoto();
+                    }, k * 70);
+                }
+            }
         }
     }
 
@@ -343,14 +355,13 @@
 
     requestAnimationFrame(loop);
 
-    // --- TỰ ĐỘNG TẠO MẢNG 30 ẢNH TỪ THƯ MỤC images/ ---
+    // --- TỰ ĐỘNG TẠO VÀ XÀO TRỘN NGẪU NHIÊN 33 ẢNH ---
     const totalPhotos = 33; 
-    const photoList = [];
+    let photoList = [];
     for (let i = 1; i <= totalPhotos; i++) {
-        photoList.push(`images/anh (${i}).jpg`); // Nếu đuôi file của bạn là .jpg thường, hãy sửa .JPG thành .jpg nhé
+        photoList.push(`images/anh (${i}).jpg`);
     }
 
-    // Thuật toán xào mảng ngẫu nhiên (Fisher-Yates Shuffle)
     for (let i = photoList.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [photoList[i], photoList[j]] = [photoList[j], photoList[i]];
@@ -361,34 +372,29 @@
 
     function create3DPhoto() {
         const img = document.createElement('img');
-        // Lấy ngẫu nhiên hoàn toàn từ danh sách 30 ảnh
         img.src = photoList[Math.floor(Math.random() * photoList.length)];
         img.className = 'falling-photo';
 
-        // Kích thước ngẫu nhiên (từ 70px đến 140px)
-        const size = Math.floor(Math.random() * 70) + 70;
+        // Kích thước ngẫu nhiên (từ 75px đến 145px)
+        const size = Math.floor(Math.random() * 70) + 75;
         img.style.width = size + 'px';
         img.style.height = size + 'px';
 
-        // Tọa độ xuất hiện ngang màn hình ngẫu nhiên, bắt đầu từ trên đỉnh (y âm)
         const x = Math.random() * (window.innerWidth - size);
         let y = -150;
         
-        // Chiều sâu 3D ngẫu nhiên (translateZ tạo hiệu ứng xa gần)
-        const z = (Math.random() - 0.5) * 400; // từ -200px đến +200px
+        const z = (Math.random() - 0.5) * 400; 
         
-        // Góc xoay 3D ban đầu
         const rotX = Math.random() * 360;
         const rotY = Math.random() * 360;
         const rotZ = (Math.random() - 0.5) * 90;
 
-        // Tốc độ rơi và tốc độ xoay ngẫu nhiên cho mỗi bức ảnh
         const speedY = Math.random() * 1.2 + 0.8;
         const rotSpeedX = (Math.random() - 0.5) * 0.8;
         const rotSpeedY = (Math.random() - 0.5) * 0.8;
 
-        // Độ trong suốt phụ thuộc vào chiều sâu 3D (ảnh ở xa mờ hơn, gần rõ hơn)
-        const opacity = z < 0 ? 0.45 : 0.85;
+        // Tăng độ trong suốt lên mức cao hơn để ảnh sáng rõ, sắc nét
+        const opacity = z < 0 ? 0.75 : 1.0;
         img.style.opacity = opacity;
 
         space3D.appendChild(img);
@@ -416,10 +422,8 @@
             p.rotX += p.rotSpeedX;
             p.rotY += p.rotSpeedY;
 
-            // Áp dụng biến đổi ma trận 3D
             p.element.style.transform = `translate3d(${p.x}px, ${p.y}px, ${p.z}px) rotateX(${p.rotX}deg) rotateY(${p.rotY}deg) rotateZ(${p.rotZ}deg)`;
 
-            // Nếu ảnh rơi ra khỏi màn hình đáy thì xóa đi để giải phóng bộ nhớ
             if (p.y > window.innerHeight + 150) {
                 p.element.remove();
                 activePhotos.splice(i, 1);
@@ -443,8 +447,8 @@
             overlay.style.display = 'none';
         }, 800);
 
-        // Sinh ra các bức ảnh liên tục mỗi 600 mili-giây
-        setInterval(create3DPhoto, 600);
+        // Nhịp độ rơi bình thường lặp lại đều đặn
+        setInterval(create3DPhoto, 650);
         requestAnimationFrame(update3DPhotos);
     });
 
