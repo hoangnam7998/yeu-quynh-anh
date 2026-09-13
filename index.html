@@ -31,7 +31,7 @@
             display: block;
         }
         
-        /* Lớp chứa hiệu ứng 3D ảnh rơi */
+        /* Lớp chứa hiệu ứng 3D ảnh và trái tim rơi */
         #space3D {
             position: absolute;
             top: 0;
@@ -54,7 +54,16 @@
             will-change: transform, opacity;
         }
 
-        /* Đẩy canvas Matrix và Text lên trên lớp ảnh 3D */
+        /* Kiểu dáng cho các trái tim 3D rơi cùng */
+        .falling-heart {
+            position: absolute;
+            font-size: 24px;
+            user-select: none;
+            text-shadow: 0 0 10px rgba(255, 105, 180, 0.8), 0 0 20px rgba(255, 20, 147, 0.6);
+            will-change: transform, opacity;
+        }
+
+        /* Đẩy canvas Matrix và Text lên trên lớp 3D */
         #matrixCanvas { z-index: 2; opacity: 0.75; }
         #textCanvas { z-index: 3; }
 
@@ -101,7 +110,7 @@
         <div class="start-text">Chạm vào đây để mở món quà nhỏ từ anh nhé ❤️</div>
     </div>
 
-    <!-- KHÔNG GIAN 3D CHỨA ẢNH RƠI -->
+    <!-- KHÔNG GIAN 3D CHỨA ẢNH VÀ TRÁI TIM RƠI -->
     <div id="space3D"></div>
 
     <!-- THẺ ÂM THANH -->
@@ -147,7 +156,6 @@
         ctxM.fillStyle = '#ffb6c1'; 
         ctxM.font = fontSize + 'px monospace';
 
-        // Làm chậm nền ngay khi đến dòng cuối cùng
         const isFinalMessage = (typeof msgIndex !== 'undefined' && msgIndex === messages.length - 1);
         const speed = isFinalMessage ? (0.4 / 2) : 0.4;
 
@@ -181,7 +189,7 @@
     let stateTimer = 0;
     let glowAngle = 0;
     let lastTime = performance.now();
-    let finalBurstTriggered = false; // Biến kiểm tra hiệu ứng bùng nổ ảnh 1 lần
+    let finalBurstTriggered = false;
 
     function wrapText(text, maxWidth) {
         const words = text.split(' ');
@@ -310,12 +318,13 @@
             alpha += deltaTime * 1.2;
             drawSmoothText(messages[msgIndex], alpha);
 
-            // Kích hoạt trận mưa ảnh bùng nổ đồng bộ ngay khi dòng cuối vừa bắt đầu xuất hiện
+            // Bùng nổ cả ảnh và trái tim khi đến dòng cuối
             if (isFinal && !finalBurstTriggered) {
                 finalBurstTriggered = true;
                 for (let k = 0; k < 33; k++) {
                     setTimeout(() => {
                         create3DPhoto();
+                        create3DHeart(); // Thêm bùng nổ trái tim
                     }, k * 70);
                 }
             }
@@ -375,20 +384,20 @@
 
     const space3D = document.getElementById('space3D');
     const activePhotos = [];
+    const activeHearts = []; // Mảng chứa các trái tim 3D
 
+    // Hàm tạo ảnh 3D rơi
     function create3DPhoto() {
         const img = document.createElement('img');
         img.src = photoList[Math.floor(Math.random() * photoList.length)];
         img.className = 'falling-photo';
 
-        // Kích thước ngẫu nhiên (từ 75px đến 145px)
         const size = Math.floor(Math.random() * 70) + 75;
         img.style.width = size + 'px';
         img.style.height = size + 'px';
 
         const x = Math.random() * (window.innerWidth - size);
         let y = -150;
-        
         const z = (Math.random() - 0.5) * 400; 
         
         const rotX = Math.random() * 360;
@@ -404,23 +413,47 @@
 
         space3D.appendChild(img);
 
-        const photoObj = {
-            element: img,
-            x: x,
-            y: y,
-            z: z,
-            rotX: rotX,
-            rotY: rotY,
-            rotZ: rotZ,
-            speedY: speedY,
-            rotSpeedX: rotSpeedX,
-            rotSpeedY: rotSpeedY
-        };
-
-        activePhotos.push(photoObj);
+        activePhotos.push({
+            element: img, x, y, z, rotX, rotY, rotZ, speedY, rotSpeedX, rotSpeedY
+        });
     }
 
-    function update3DPhotos() {
+    // --- HÀM TẠO TRÁI TIM 3D RƠI ---
+    const heartSymbols = ['❤️', '💖', '💕', '💗', '💓', '💘'];
+    
+    function create3DHeart() {
+        const heart = document.createElement('div');
+        heart.className = 'falling-heart';
+        heart.innerHTML = heartSymbols[Math.floor(Math.random() * heartSymbols.length)];
+
+        // Kích thước ngẫu nhiên cho trái tim (từ 16px đến 42px)
+        const fontSize = Math.floor(Math.random() * 26) + 16;
+        heart.style.fontSize = fontSize + 'px';
+
+        const x = Math.random() * window.innerWidth;
+        let y = -50;
+        const z = (Math.random() - 0.5) * 500; // Độ sâu 3D đa dạng hơn
+
+        const rotX = Math.random() * 360;
+        const rotY = Math.random() * 360;
+        const rotZ = (Math.random() - 0.5) * 60;
+
+        const speedY = Math.random() * 1.5 + 0.6;
+        const rotSpeedX = (Math.random() - 0.5) * 1.5;
+        const rotSpeedY = (Math.random() - 0.5) * 1.5;
+
+        heart.style.opacity = Math.random() * 0.5 + 0.5;
+
+        space3D.appendChild(heart);
+
+        activeHearts.push({
+            element: heart, x, y, z, rotX, rotY, rotZ, speedY, rotSpeedX, rotSpeedY
+        });
+    }
+
+    // Cập nhật chuyển động 3D chung cho cả ảnh và trái tim
+    function update3DObjects() {
+        // Cập nhật ảnh rơi
         for (let i = activePhotos.length - 1; i >= 0; i--) {
             let p = activePhotos[i];
             p.y += p.speedY;
@@ -434,7 +467,23 @@
                 activePhotos.splice(i, 1);
             }
         }
-        requestAnimationFrame(update3DPhotos);
+
+        // Cập nhật trái tim rơi
+        for (let i = activeHearts.length - 1; i >= 0; i--) {
+            let h = activeHearts[i];
+            h.y += h.speedY;
+            h.rotX += h.rotSpeedX;
+            h.rotY += h.rotSpeedY;
+
+            h.element.style.transform = `translate3d(${h.x}px, ${h.y}px, ${h.z}px) rotateX(${h.rotX}deg) rotateY(${h.rotY}deg) rotateZ(${h.rotZ}deg)`;
+
+            if (h.y > window.innerHeight + 50) {
+                h.element.remove();
+                activeHearts.splice(i, 1);
+            }
+        }
+
+        requestAnimationFrame(update3DObjects);
     }
 
     const overlay = document.getElementById('startOverlay');
@@ -452,8 +501,12 @@
             overlay.style.display = 'none';
         }, 800);
 
+        // Sinh ảnh định kỳ
         setInterval(create3DPhoto, 650);
-        requestAnimationFrame(update3DPhotos);
+        // Sinh trái tim rơi định kỳ (cứ mỗi 300ms thả một trái tim)
+        setInterval(create3DHeart, 300);
+
+        requestAnimationFrame(update3DObjects);
     });
 
     window.addEventListener('resize', () => {
