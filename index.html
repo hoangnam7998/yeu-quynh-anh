@@ -29,34 +29,51 @@
             height: 100%;
             display: block;
         }
-        /* Nút thông báo bấm để nghe nhạc */
-        #playHint {
+        
+        /* Màn hình chờ mở nhạc (Overlay) cho điện thoại */
+        #startOverlay {
             position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #ffb6c1;
-            background: rgba(255, 105, 180, 0.2);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-family: sans-serif;
-            font-size: 14px;
-            z-index: 999;
-            pointer-events: none;
-            animation: pulseHint 1.5s infinite;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(13, 2, 8, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            cursor: pointer;
+            transition: opacity 0.8s ease;
         }
-        @keyframes pulseHint {
-            0% { opacity: 0.6; }
-            50% { opacity: 1; }
-            100% { opacity: 0.6; }
+        .heart-btn {
+            font-size: 60px;
+            animation: beat 1.2s infinite alternate;
+            margin-bottom: 15px;
+        }
+        .start-text {
+            color: #ffb6c1;
+            font-family: sans-serif;
+            font-size: 16px;
+            text-align: center;
+            padding: 0 20px;
+            letter-spacing: 0.5px;
+        }
+        @keyframes beat {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.2); }
         }
     </style>
 </head>
 <body>
 
-    <div id="playHint">✨ Chạm vào màn hình để bật nhạc nhé ❤️</div>
+    <!-- Màn hình chờ bắt buộc chạm để bật nhạc trên điện thoại -->
+    <div id="startOverlay">
+        <div class="heart-btn">💖</div>
+        <div class="start-text">Chạm vào đây để mở món quà nhỏ từ anh nhé ❤️</div>
+    </div>
 
-    <!-- THẺ ÂM THANH (Gọi file love.mp3 cùng thư mục) -->
+    <!-- THẺ ÂM THANH -->
     <audio id="bgMusic" loop>
         <source src="love.mp3" type="audio/mpeg">
     </audio>
@@ -296,16 +313,22 @@
 
     requestAnimationFrame(loop);
 
-    // --- KÍCH HOẠT PHÁT NHẠC KHI CLICK/CHẠM ---
-    window.addEventListener('click', () => {
-        const music = document.getElementById('bgMusic');
-        const hint = document.getElementById('playHint');
+    // --- XỬ LÝ SỰ KIỆN CHẠM MỞ NHẠC VÀ MẤT MÀN HÌNH CHỜ ---
+    const overlay = document.getElementById('startOverlay');
+    const music = document.getElementById('bgMusic');
+
+    overlay.addEventListener('click', () => {
         if (music) {
             music.play().then(() => {
-                if (hint) hint.style.display = 'none'; // Ẩn thông báo đi khi nhạc đã bật
+                console.log("Nhạc đang chạy!");
             }).catch(e => console.log(e));
         }
-    }, { once: true });
+        // Hiệu ứng mờ dần màn hình chào rồi ẩn hẳn
+        overlay.style.opacity = '0';
+        setTimeout(() => {
+            overlay.style.display = 'none';
+        }, 800);
+    });
 
     window.addEventListener('resize', () => {
         size = setupCanvas(matrixCanvas);
