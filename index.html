@@ -343,13 +343,19 @@
 
     requestAnimationFrame(loop);
 
-    // --- HỆ THỐNG 3D ẢNH RƠI TỰ DO ---
-    const photoList = ["1.JPG", "2.JPG", "3.JPG", "4.JPG", "5.JPG", "6.JPG"]; 
+    // --- TỰ ĐỘNG TẠO MẢNG 30 ẢNH TỪ THƯ MỤC images/ ---
+    const totalPhotos = 33; 
+    const photoList = [];
+    for (let i = 1; i <= totalPhotos; i++) {
+        photoList.push(`images/anh (${i}).JPG`); // Nếu đuôi file của bạn là .jpg thường, hãy sửa .JPG thành .jpg nhé
+    }
+
     const space3D = document.getElementById('space3D');
     const activePhotos = [];
 
     function create3DPhoto() {
         const img = document.createElement('img');
+        // Lấy ngẫu nhiên hoàn toàn từ danh sách 30 ảnh
         img.src = photoList[Math.floor(Math.random() * photoList.length)];
         img.className = 'falling-photo';
 
@@ -431,8 +437,8 @@
             overlay.style.display = 'none';
         }, 800);
 
-        // Sinh ra các bức ảnh liên tục mỗi 700 mili-giây
-        setInterval(create3DPhoto, 700);
+        // Sinh ra các bức ảnh liên tục mỗi 600 mili-giây
+        setInterval(create3DPhoto, 600);
         requestAnimationFrame(update3DPhotos);
     });
 
