@@ -20,6 +20,7 @@
             overflow: hidden;
             background-color: #0d0208;
             font-family: 'Great Vibes', cursive;
+            perspective: 1000px; /* Tạo không gian 3D tổng thể */
         }
         canvas {
             position: absolute;
@@ -30,38 +31,30 @@
             display: block;
         }
         
-        /* Lớp chứa các ô ảnh trôi nổi phía sau */
-        #photoWall {
+        /* Lớp chứa hiệu ứng 3D ảnh rơi */
+        #space3D {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: 1; /* Nằm dưới lớp chữ và Matrix */
+            z-index: 1;
+            transform-style: preserve-3d;
             overflow: hidden;
         }
         
-        .floating-photo {
+        .falling-photo {
             position: absolute;
-            width: 110px;
-            height: 110px;
-            border-radius: 12px;
-            border: 2px solid rgba(255, 182, 193, 0.6);
+            border-radius: 10px;
+            border: 2px solid rgba(255, 182, 193, 0.7);
             object-fit: cover;
-            box-shadow: 0 0 15px rgba(255, 105, 180, 0.4);
-            opacity: 0;
-            transform: scale(0.5);
-            transition: opacity 1.5s ease, transform 1.5s ease;
-        }
-        
-        .floating-photo.show {
-            opacity: 0.75;
-            transform: scale(1);
+            box-shadow: 0 10px 25px rgba(255, 105, 180, 0.4);
+            will-change: transform, opacity;
         }
 
-        /* Đẩy canvas Matrix và Text lên trên lớp ảnh */
-        #matrixCanvas { z-index: 2; }
+        /* Đẩy canvas Matrix và Text lên trên lớp ảnh 3D */
+        #matrixCanvas { z-index: 2; opacity: 0.75; }
         #textCanvas { z-index: 3; }
 
         /* Màn hình chờ mở nhạc */
@@ -107,8 +100,8 @@
         <div class="start-text">Chạm vào đây để mở món quà nhỏ từ anh nhé ❤️</div>
     </div>
 
-    <!-- KHUNG CHỨA CÁC Ô ẢNH NỔI -->
-    <div id="photoWall"></div>
+    <!-- KHÔNG GIAN 3D CHỨA ẢNH RƠI -->
+    <div id="space3D"></div>
 
     <!-- THẺ ÂM THANH -->
     <audio id="bgMusic" loop>
@@ -350,38 +343,77 @@
 
     requestAnimationFrame(loop);
 
-    // --- DANH SÁCH 5 ẢNH TỪ 1 ĐẾN 5 (ĐUÔI .JPG) ---
-    const photoList = ["1.JPG", "2.JPG", "3.JPG", "4.JPG", "5.JPG"]; 
+    // --- HỆ THỐNG 3D ẢNH RƠI TỰ DO ---
+    const photoList = ["1.JPG", "2.JPG", "3.JPG", "4.JPG", "5.JPG", "6.JPG"]; 
+    const space3D = document.getElementById('space3D');
+    const activePhotos = [];
 
-    function spawnFloatingPhotos() {
-        const wall = document.getElementById('photoWall');
-        
+    function create3DPhoto() {
         const img = document.createElement('img');
         img.src = photoList[Math.floor(Math.random() * photoList.length)];
-        img.className = 'floating-photo';
+        img.className = 'falling-photo';
+
+        // Kích thước ngẫu nhiên (từ 70px đến 140px)
+        const size = Math.floor(Math.random() * 70) + 70;
+        img.style.width = size + 'px';
+        img.style.height = size + 'px';
+
+        // Tọa độ xuất hiện ngang màn hình ngẫu nhiên, bắt đầu từ trên đỉnh (y âm)
+        const x = Math.random() * (window.innerWidth - size);
+        let y = -150;
         
-        const randomX = Math.random() * (window.innerWidth - 130);
-        const randomY = Math.random() * (window.innerHeight - 130);
-        img.style.left = randomX + 'px';
-        img.style.top = randomY + 'px';
+        // Chiều sâu 3D ngẫu nhiên (translateZ tạo hiệu ứng xa gần)
+        const z = (Math.random() - 0.5) * 400; // từ -200px đến +200px
         
-        const randomRotate = (Math.random() - 0.5) * 60; 
-        img.style.transform = `scale(0.5) rotate(${randomRotate}deg)`;
+        // Góc xoay 3D ban đầu
+        const rotX = Math.random() * 360;
+        const rotY = Math.random() * 360;
+        const rotZ = (Math.random() - 0.5) * 90;
 
-        wall.appendChild(img);
+        // Tốc độ rơi và tốc độ xoay ngẫu nhiên cho mỗi bức ảnh
+        const speedY = Math.random() * 1.2 + 0.8;
+        const rotSpeedX = (Math.random() - 0.5) * 0.8;
+        const rotSpeedY = (Math.random() - 0.5) * 0.8;
 
-        setTimeout(() => {
-            img.classList.add('show');
-            img.style.transform = `scale(1) rotate(${randomRotate}deg)`;
-        }, 100);
+        // Độ trong suốt phụ thuộc vào chiều sâu 3D (ảnh ở xa mờ hơn, gần rõ hơn)
+        const opacity = z < 0 ? 0.45 : 0.85;
+        img.style.opacity = opacity;
 
-        setTimeout(() => {
-            img.style.opacity = '0';
-            img.style.transform = `scale(0.8) rotate(${randomRotate}deg)`;
-            setTimeout(() => {
-                img.remove();
-            }, 1500);
-        }, 3500);
+        space3D.appendChild(img);
+
+        const photoObj = {
+            element: img,
+            x: x,
+            y: y,
+            z: z,
+            rotX: rotX,
+            rotY: rotY,
+            rotZ: rotZ,
+            speedY: speedY,
+            rotSpeedX: rotSpeedX,
+            rotSpeedY: rotSpeedY
+        };
+
+        activePhotos.push(photoObj);
+    }
+
+    function update3DPhotos() {
+        for (let i = activePhotos.length - 1; i >= 0; i--) {
+            let p = activePhotos[i];
+            p.y += p.speedY;
+            p.rotX += p.rotSpeedX;
+            p.rotY += p.rotSpeedY;
+
+            // Áp dụng biến đổi ma trận 3D
+            p.element.style.transform = `translate3d(${p.x}px, ${p.y}px, ${p.z}px) rotateX(${p.rotX}deg) rotateY(${p.rotY}deg) rotateZ(${p.rotZ}deg)`;
+
+            // Nếu ảnh rơi ra khỏi màn hình đáy thì xóa đi để giải phóng bộ nhớ
+            if (p.y > window.innerHeight + 150) {
+                p.element.remove();
+                activePhotos.splice(i, 1);
+            }
+        }
+        requestAnimationFrame(update3DPhotos);
     }
 
     const overlay = document.getElementById('startOverlay');
@@ -399,7 +431,9 @@
             overlay.style.display = 'none';
         }, 800);
 
-        setInterval(spawnFloatingPhotos, 1200);
+        // Sinh ra các bức ảnh liên tục mỗi 700 mili-giây
+        setInterval(create3DPhoto, 700);
+        requestAnimationFrame(update3DPhotos);
     });
 
     window.addEventListener('resize', () => {
