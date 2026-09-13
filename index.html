@@ -30,7 +30,41 @@
             display: block;
         }
         
-        /* Màn hình chờ mở nhạc (Overlay) cho điện thoại */
+        /* Lớp chứa các ô ảnh trôi nổi phía sau */
+        #photoWall {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1; /* Nằm dưới lớp chữ và Matrix */
+            overflow: hidden;
+        }
+        
+        .floating-photo {
+            position: absolute;
+            width: 110px;
+            height: 110px;
+            border-radius: 12px;
+            border: 2px solid rgba(255, 182, 193, 0.6);
+            object-fit: cover;
+            box-shadow: 0 0 15px rgba(255, 105, 180, 0.4);
+            opacity: 0;
+            transform: scale(0.5);
+            transition: opacity 1.5s ease, transform 1.5s ease;
+        }
+        
+        .floating-photo.show {
+            opacity: 0.75;
+            transform: scale(1);
+        }
+
+        /* Đẩy canvas Matrix và Text lên trên lớp ảnh */
+        #matrixCanvas { z-index: 2; }
+        #textCanvas { z-index: 3; }
+
+        /* Màn hình chờ mở nhạc */
         #startOverlay {
             position: fixed;
             top: 0;
@@ -67,11 +101,14 @@
 </head>
 <body>
 
-    <!-- Màn hình chờ bắt buộc chạm để bật nhạc trên điện thoại -->
+    <!-- Màn hình chờ bắt buộc chạm để bật nhạc -->
     <div id="startOverlay">
         <div class="heart-btn">💖</div>
         <div class="start-text">Chạm vào đây để mở món quà nhỏ từ anh nhé ❤️</div>
     </div>
+
+    <!-- KHUNG CHỨA CÁC Ô ẢNH NỔI -->
+    <div id="photoWall"></div>
 
     <!-- THẺ ÂM THANH -->
     <audio id="bgMusic" loop>
@@ -110,7 +147,7 @@
     let drops = Array(columns).fill(0).map(() => Math.random() * -100);
 
     function drawMatrix() {
-        ctxM.fillStyle = 'rgba(13, 2, 8, 0.08)'; 
+        ctxM.fillStyle = 'rgba(13, 2, 8, 0.12)'; 
         ctxM.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
 
         ctxM.fillStyle = '#ffb6c1'; 
@@ -313,7 +350,40 @@
 
     requestAnimationFrame(loop);
 
-    // --- XỬ LÝ SỰ KIỆN CHẠM MỞ NHẠC VÀ MẤT MÀN HÌNH CHỜ ---
+    // --- DANH SÁCH 5 ẢNH TỪ 1 ĐẾN 5 (ĐUÔI .JPG) ---
+    const photoList = ["1.JPG", "2.JPG", "3.JPG", "4.JPG", "5.JPG"]; 
+
+    function spawnFloatingPhotos() {
+        const wall = document.getElementById('photoWall');
+        
+        const img = document.createElement('img');
+        img.src = photoList[Math.floor(Math.random() * photoList.length)];
+        img.className = 'floating-photo';
+        
+        const randomX = Math.random() * (window.innerWidth - 130);
+        const randomY = Math.random() * (window.innerHeight - 130);
+        img.style.left = randomX + 'px';
+        img.style.top = randomY + 'px';
+        
+        const randomRotate = (Math.random() - 0.5) * 60; 
+        img.style.transform = `scale(0.5) rotate(${randomRotate}deg)`;
+
+        wall.appendChild(img);
+
+        setTimeout(() => {
+            img.classList.add('show');
+            img.style.transform = `scale(1) rotate(${randomRotate}deg)`;
+        }, 100);
+
+        setTimeout(() => {
+            img.style.opacity = '0';
+            img.style.transform = `scale(0.8) rotate(${randomRotate}deg)`;
+            setTimeout(() => {
+                img.remove();
+            }, 1500);
+        }, 3500);
+    }
+
     const overlay = document.getElementById('startOverlay');
     const music = document.getElementById('bgMusic');
 
@@ -323,11 +393,13 @@
                 console.log("Nhạc đang chạy!");
             }).catch(e => console.log(e));
         }
-        // Hiệu ứng mờ dần màn hình chào rồi ẩn hẳn
+        
         overlay.style.opacity = '0';
         setTimeout(() => {
             overlay.style.display = 'none';
         }, 800);
+
+        setInterval(spawnFloatingPhotos, 1200);
     });
 
     window.addEventListener('resize', () => {
