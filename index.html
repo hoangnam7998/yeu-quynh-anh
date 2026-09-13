@@ -350,6 +350,12 @@
         photoList.push(`images/anh (${i}).jpg`); // Nếu đuôi file của bạn là .jpg thường, hãy sửa .JPG thành .jpg nhé
     }
 
+    // Thuật toán xào mảng ngẫu nhiên (Fisher-Yates Shuffle)
+    for (let i = photoList.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [photoList[i], photoList[j]] = [photoList[j], photoList[i]];
+    }
+
     const space3D = document.getElementById('space3D');
     const activePhotos = [];
 
