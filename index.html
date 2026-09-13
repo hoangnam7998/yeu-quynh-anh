@@ -147,8 +147,9 @@
         ctxM.fillStyle = '#ffb6c1'; 
         ctxM.font = fontSize + 'px monospace';
 
-        const isFinalState = (typeof state !== 'undefined' && state === "END");
-        const speed = isFinalState ? (0.4 / 2) : 0.4;
+        // Làm chậm nền ngay khi đến dòng cuối cùng
+        const isFinalMessage = (typeof msgIndex !== 'undefined' && msgIndex === messages.length - 1);
+        const speed = isFinalMessage ? (0.4 / 2) : 0.4;
 
         for (let i = 0; i < drops.length; i++) {
             const text = chars.charAt(Math.floor(Math.random() * chars.length));
@@ -164,8 +165,7 @@
     const messages = [
         "14/8/2026 - 14/9/2026",
         "Yeeee mình yêu nhau được 1 tháng rồi",
-        "Và nói chuyện với nhau được 191 ngày không đứt chuỗi ",
-        "Cảm ơn chúng ta luôn cho nhau cơ hội trong 191 ngày qua ",
+        "Và nói chuyện với nhau được 191 ngày ",
         "Yêu Bé Iuuu siêu cấp vũ trụ của anh",
         "Nam ❤️ Quỳnh Anh"
     ];
@@ -305,6 +305,16 @@
             alpha += deltaTime * 1.2;
             drawSmoothText(messages[msgIndex], alpha);
 
+            // Kích hoạt trận mưa ảnh bùng nổ đồng bộ ngay khi dòng cuối vừa bắt đầu xuất hiện
+            if (isFinal && !finalBurstTriggered) {
+                finalBurstTriggered = true;
+                for (let k = 0; k < 22; k++) {
+                    setTimeout(() => {
+                        create3DPhoto();
+                    }, k * 70);
+                }
+            }
+
             if (alpha >= 1) {
                 alpha = 1;
                 state = "HOLD";
@@ -335,16 +345,6 @@
         } 
         else if (state === "END") {
             drawSmoothText(messages[msgIndex], 1);
-            
-            // Kích hoạt trận mưa ảnh bùng nổ (dày hơn gấp nhiều lần) đúng 1 lần khi đến dòng cuối
-            if (!finalBurstTriggered) {
-                finalBurstTriggered = true;
-                for (let k = 0; k < 22; k++) {
-                    setTimeout(() => {
-                        create3DPhoto();
-                    }, k * 70);
-                }
-            }
         }
     }
 
@@ -394,7 +394,6 @@
         const rotSpeedX = (Math.random() - 0.5) * 0.8;
         const rotSpeedY = (Math.random() - 0.5) * 0.8;
 
-        // Tăng độ trong suốt lên mức cao hơn để ảnh sáng rõ, sắc nét
         const opacity = z < 0 ? 0.75 : 1.0;
         img.style.opacity = opacity;
 
@@ -448,7 +447,6 @@
             overlay.style.display = 'none';
         }, 800);
 
-        // Nhịp độ rơi bình thường lặp lại đều đặn
         setInterval(create3DPhoto, 650);
         requestAnimationFrame(update3DPhotos);
     });
