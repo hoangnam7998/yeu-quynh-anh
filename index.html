@@ -12,7 +12,7 @@
         }
 
         body {
-            background-color: #030103;
+            background-color: #010001;
             min-height: 100vh;
             overflow: hidden;
             display: flex;
@@ -22,7 +22,7 @@
             position: relative;
         }
 
-        /* Canvas hiệu ứng sương lụa hồng và bong bóng cầu vồng */
+        /* Canvas hiệu ứng dải lụa dòng chảy */
         #bgCanvas {
             position: fixed;
             top: 0;
@@ -31,6 +31,31 @@
             height: 100%;
             pointer-events: none;
             z-index: 1;
+        }
+
+        /* Nút điều khiển nhạc riêng */
+        .music-control {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .music-control:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
         }
 
         /* Phong bì thư ở giữa */
@@ -169,7 +194,18 @@
 </head>
 <body>
 
-    <!-- Canvas hiệu ứng sương lụa hồng và bong bóng -->
+    <!-- THẺ NHẠC LOVE2.MP3 -->
+    <audio id="bgMusic" loop>
+        <source src="love2.mp3" type="audio/mp3">
+        Trình duyệt của bạn không hỗ trợ thẻ âm thanh.
+    </audio>
+
+    <!-- Nút bật/tắt nhạc góc trên bên phải -->
+    <button class="music-control" id="musicBtn" onclick="toggleMusic()">
+        🎵 <span id="musicStatus">Bật nhạc</span>
+    </button>
+
+    <!-- Canvas hiệu ứng dải lụa uốn lượn chéo mượt mà -->
     <canvas id="bgCanvas"></canvas>
 
     <!-- Phong bì thư bấm vào để mở -->
@@ -201,7 +237,28 @@ Anh yêu Quỳnh Anh của anh nhiều lắm!
 
 Nam Yêu Quỳnh Anh.`;
 
-        // --- 1. HIỆU ỨNG NỀN SƯƠNG LỤA HỒNG & BONG BÓNG CẦU VỒNG ---
+        // --- 1. ĐIỀU KHIỂN NHẠC LOVE2.MP3 ---
+        const bgMusic = document.getElementById('bgMusic');
+        const musicStatus = document.getElementById('musicStatus');
+        let isMusicPlaying = false;
+
+        function toggleMusic() {
+            if (isMusicPlaying) {
+                bgMusic.pause();
+                musicStatus.innerText = "Bật nhạc";
+                isMusicPlaying = false;
+            } else {
+                bgMusic.play().then(() => {
+                    musicStatus.innerText = "Tắt nhạc";
+                    isMusicPlaying = true;
+                }).catch(e => {
+                    console.log("Trình duyệt chặn phát nhạc tự động:", e);
+                });
+            }
+        }
+
+
+        // --- 2. HIỆU ỨNG DẢI LỤA UỐN LƯỢN HỮU CƠ ---
         const canvas = document.getElementById('bgCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -212,17 +269,22 @@ Nam Yêu Quỳnh Anh.`;
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        // Tạo các dải lụa/sương mù màu hồng trôi mờ ảo (mô phỏng như ảnh mẫu)
-        const silkWaves = [];
-        const waveCount = 5;
-        for (let i = 0; i < waveCount; i++) {
-            silkWaves.push({
-                yOffset: (canvas.height / waveCount) * i,
-                length: Math.random() * 200 + 400,
-                amplitude: Math.random() * 80 + 60,
-                speed: Math.random() * 0.003 + 0.001,
-                angle: Math.random() * Math.PI * 2,
-                opacity: Math.random() * 0.08 + 0.04
+        const silkStreams = [];
+        const streamCount = 14; 
+        
+        for (let i = 0; i < streamCount; i++) {
+            silkStreams.push({
+                startX: -100,
+                startY: (canvas.height / streamCount) * i + (Math.random() * 80 - 40),
+                amplitude: Math.random() * 120 + 40,
+                frequency: Math.random() * 0.0009 + 0.0004,
+                speed: Math.random() * 0.35 + 0.1,
+                offset: Math.random() * 2000,
+                thickness: Math.random() * 35 + 4,
+                maxAlpha: Math.random() * 0.14 + 0.02,
+                angleTilt: (Math.random() - 0.5) * 0.35,
+                pulseSpeed: Math.random() * 0.02 + 0.008,
+                pulseOffset: Math.random() * Math.PI * 2
             });
         }
 
@@ -262,33 +324,46 @@ Nam Yêu Quỳnh Anh.`;
         function animate() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 1. Vẽ nền sương lụa màu hồng mềm mại uyển chuyển
-            silkWaves.forEach(w => {
-                w.angle += w.speed;
+            // Vẽ các dải lụa
+            silkStreams.forEach(stream => {
+                stream.offset += stream.speed;
+                stream.pulseOffset += stream.pulseSpeed;
+
+                let currentAlpha = stream.maxAlpha * (0.6 + 0.4 * Math.sin(stream.pulseOffset));
+
                 ctx.save();
                 ctx.beginPath();
-                
-                for (let x = 0; x <= canvas.width; x += 30) {
-                    let y = w.yOffset + Math.sin(x * 0.002 + w.angle) * w.amplitude + Math.cos(x * 0.004 - w.angle) * 30;
-                    if (x === 0) ctx.moveTo(x, y);
+
+                let stepSize = 20;
+                let totalLength = canvas.width + 200;
+
+                for (let x = -100; x <= totalLength; x += stepSize) {
+                    let y = stream.startY + 
+                            (x * stream.angleTilt) +
+                            Math.sin((x + stream.offset) * stream.frequency) * stream.amplitude +
+                            Math.cos((x - stream.offset) * 0.0006) * (stream.amplitude * 0.5);
+                    
+                    if (x === -100) ctx.moveTo(x, y);
                     else ctx.lineTo(x, y);
                 }
 
-                ctx.lineTo(canvas.width, canvas.height);
-                ctx.lineTo(0, canvas.height);
-                ctx.closePath();
+                let grad = ctx.createLinearGradient(0, 0, canvas.width, 0);
+                grad.addColorStop(0, 'rgba(255, 105, 180, 0)');
+                grad.addColorStop(0.25, `rgba(255, 140, 185, ${currentAlpha})`);
+                grad.addColorStop(0.5, `rgba(255, 192, 203, ${currentAlpha * 1.4})`);
+                grad.addColorStop(0.75, `rgba(255, 140, 185, ${currentAlpha})`);
+                grad.addColorStop(1, 'rgba(255, 105, 180, 0)');
 
-                let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-                grad.addColorStop(0, `rgba(255, 105, 180, 0)`);
-                grad.addColorStop(0.5, `rgba(230, 80, 140, ${w.opacity})`);
-                grad.addColorStop(1, `rgba(255, 182, 193, 0)`);
-
-                ctx.fillStyle = grad;
-                ctx.fill();
+                ctx.strokeStyle = grad;
+                ctx.lineWidth = stream.thickness;
+                ctx.lineCap = 'round';
+                ctx.shadowBlur = 40;
+                ctx.shadowColor = 'rgba(255, 105, 180, 0.45)';
+                ctx.stroke();
                 ctx.restore();
             });
 
-            // 2. Vẽ bong bóng cầu vồng chứa ảnh bay ngang
+            // Vẽ bong bóng chứa ảnh
             bubbles.forEach(b => {
                 b.x += b.speedX;
                 b.angle += b.wobbleSpeed;
@@ -301,7 +376,6 @@ Nam Yêu Quỳnh Anh.`;
 
                 ctx.save();
 
-                // Vẽ ảnh lọt lòng
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(b.x, b.y, b.radius - 2, 0, Math.PI * 2);
@@ -319,7 +393,6 @@ Nam Yêu Quỳnh Anh.`;
                 }
                 ctx.restore();
 
-                // Vỏ bong bóng 7 sắc cầu vồng
                 const rainbowGlow = ctx.createRadialGradient(
                     b.x - b.radius * 0.3, b.y - b.radius * 0.3, b.radius * 0.1,
                     b.x, b.y, b.radius
@@ -336,7 +409,6 @@ Nam Yêu Quỳnh Anh.`;
                 ctx.fillStyle = rainbowGlow;
                 ctx.fill();
 
-                // Điểm sáng phản chiếu 3D
                 ctx.beginPath();
                 ctx.arc(b.x - b.radius * 0.35, b.y - b.radius * 0.35, b.radius * 0.2, 0, Math.PI * 2);
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
@@ -353,60 +425,6 @@ Nam Yêu Quỳnh Anh.`;
             requestAnimationFrame(animate);
         }
         animate();
-
-
-        // --- 2. HỆ THỐNG ÂM THANH DU DƯƠNG ---
-        let audioCtx = null;
-        let isPlaying = false;
-        let timerNode = null;
-
-        function playRomanticMelody() {
-            if (isPlaying) return;
-            try {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                isPlaying = true;
-
-                const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50];
-                const melodyIndex = [0, 2, 4, 2, 5, 4, 3, 2, 1, 0, 3, 2, 1, 0];
-                let step = 0;
-
-                function playNextNote() {
-                    if (!isPlaying || !audioCtx) return;
-                    
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(notes[melodyIndex[step]], audioCtx.currentTime);
-
-                    gain.gain.setValueAtTime(0, audioCtx.currentTime);
-                    gain.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + 0.2);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1.8);
-
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 1.8);
-
-                    step = (step + 1) % melodyIndex.length;
-                    timerNode = setTimeout(playNextNote, 1200);
-                }
-
-                playNextNote();
-            } catch (e) {
-                console.log("Trình duyệt chặn Audio Auto-play:", e);
-            }
-        }
-
-        function stopRomanticMelody() {
-            isPlaying = false;
-            if (timerNode) clearTimeout(timerNode);
-            if (audioCtx) {
-                audioCtx.close();
-                audioCtx = null;
-            }
-        }
 
 
         // --- 3. HIỆU ỨNG GÕ CHỮ & MỞ THƯ ---
@@ -438,7 +456,10 @@ Nam Yêu Quỳnh Anh.`;
                 startTypingEffect();
             }, 300);
 
-            playRomanticMelody();
+            // Tự động phát bài love2.mp3 khi mở thư (nếu chưa bật)
+            if (!isMusicPlaying) {
+                toggleMusic();
+            }
         }
 
         function closeLetter() {
@@ -450,8 +471,6 @@ Nam Yêu Quỳnh Anh.`;
             setTimeout(() => {
                 container.classList.remove('open');
             }, 300);
-
-            stopRomanticMelody();
         }
     </script>
 </body>
